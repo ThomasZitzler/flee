@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<project SchemaVersion="2.0">
+    <assemblies>
+        <assembly location="..\lib\bin\Debug\ciloci.Flee.dll" documentation="..\lib\bin\Debug\ciloci.Flee.xml" />
+    </assemblies>
+    <documenters>
+        <documenter name="MSDN-CHM">
+            <property name="OutputDirectory" value=".\" />
+            <property name="HtmlHelpName" value="Ciloci.Flee" />
+            <property name="Title" value="Fast Lightweight Expression Evaluator Documentation" />
+            <property name="IncrementalBuild" value="True" />
+            <property name="CopyrightText" value="© 2007 Eugene Ciloci" />
+            <property name="CopyrightHref" value="http://www.codeplex.com/Flee" />
+        </documenter>
+    </documenters>
+</project>

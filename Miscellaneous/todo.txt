@@ -1,0 +1,86 @@
+Todo:
+
+-expressions as variables
+-on-demand properties/fields (not just variables)?
+-Does context really need to be cloned?
+-can expression access internal members of non-owner types in same module as owner?
+-calcengine atoms
+-cannot access default indexer on owner (ie: "[0]")
+-fix article for EmitToassembly
+-calc engine serialize
+-new operator
+-clean up special function parsing?
+-decimal
+
+Done:
+-documentation for new import classes
+-treat all numbers as doubles?
+-context.CreateExpression() ?
+-get rid of serialization code
+-Determine properties through TypeDescriptor?
+-on-demand functions
+-Allow access to what methods are in an expression's imports
+-get rid of use of reflection on ILGenerator for long/short branches
+-Fix enum equality bug
+-change wiki + docs for new way to import statics
+-fix bug where a.a access variable named "a" twice
+-figure out way to validate a variable's type's accessiblity to more than IsPublic
+-long branches for in operator
+-code comment variable collection
+-can automate name of expression elements?
+-"a in (1,2,3)" operator?
+-proper namespaces and ability to add single method to imports
+-variables.Add(name, type) so you can define a variable without giving a value
+-struct as owner type
+-calcengine.contains("a")
+-remove source control tags from src package
+-update examples
+-any order add to calc engine
+-on demand variables
+-variables.item("a") = 123
+-take off New on features list
+-param array calls
+-prefix for imported class (ie: oc.Func())?
+-null value
+-reference equality (ie: Is operator)
+-operator support
+-convert int<->uint shouldn't emit a conv opcode
+-comments
+-handle case where branch length is greater than short
+-serialization
+-allow calls like int.maxvalue for builtin types?
+-logical XOR
+-shifts
+-automatic detection of int literal size
+-documentation
+-demo
+-license notice on source files
+-checked conversions
+-checked arithmetic
+-chars
+-escape sequences for string and char...don't allow newlines in literal
+-global type lookup
+-enums
+-function calls on value types
+-casts
+-arrays
+-hex numbers
+-loads of variables that are constants
+-lesser types (ie: float and int8/16)
+-functions
+-variables
+-conditional operator
+-string add
+-short-circuit logical operators
+-figure out how to have a negative max value constant
+-implicit conversions (ie: Int->Double)
+-bitwise (and, or, xor, not)
+-logical (and, or, not)
+-Precedence: NOT > AND > OR
+-logical compare
+-arithmetic operators
+-out of range constants
+-integer constants
+-double constants
+-string constants
+-boolean constants

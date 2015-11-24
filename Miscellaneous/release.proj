@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--Build a release version of Flee-->
+<!--Requires a property named Version (ie: 0.9.19.0) to be supplied from the command line-->
+<Project DefaultTargets="Release" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask AssemblyFile="CustomMSBuildTasks.dll" TaskName="CustomMSBuildTasks.SetAssemblyVersion" />
+  <UsingTask AssemblyFile="CustomMSBuildTasks.dll" TaskName="CustomMSBuildTasks.WriteTemplateText" />
+  <UsingTask AssemblyFile="CustomMSBuildTasks.dll" TaskName="CustomMSBuildTasks.RemoveProjectSourceControlBindings" />	
+  <UsingTask AssemblyFile="CustomMSBuildTasks.dll" TaskName="CustomMSBuildTasks.RemoveSolutionSourceControlBindings" />	
+  <PropertyGroup>
+    <ProductName>Flee</ProductName>
+    <ReleaseDir>$(ProductName)-$(Version)</ReleaseDir>
+    <ReleaseName>$(ProductName)-$(Version)</ReleaseName>
+    <SourceDir>$(ReleaseDir)\src</SourceDir>
+    <LibDir>$(ReleaseDir)\lib</LibDir>
+    <DemoDir>$(ReleaseDir)\demo</DemoDir>
+    <MiscDir>$(SourceDir)\Miscellaneous</MiscDir>
+    <SolutionItemsDir>$(SourceDir)\SolutionItems</SolutionItemsDir>
+    <ReleaseNotesFile>$(ReleaseDir)\ReleaseNotes.txt</ReleaseNotesFile>
+    <ReleaseReadmeFile>$(ReleaseDir)\Readme.txt</ReleaseReadmeFile>
+    </PropertyGroup>
+  <!--Main release task-->
+  <Target Name="Release">
+    <MakeDir Directories="$(ReleaseDir)"></MakeDir>
+    <CallTarget Targets="FetchSource"></CallTarget>
+    <CallTarget Targets="Documents"></CallTarget>
+    <RemoveDir Directories="$(SourceDir)\Miscellaneous"></RemoveDir>
+    <!--Set the flee version on the assembly-->
+    <SetAssemblyVersion Version="$(Version)" TargetDir="$(SourceDir)\lib"></SetAssemblyVersion>
+    <!--Build the release packages-->
+    <CallTarget Targets="src"></CallTarget>
+    <CallTarget Targets="lib"></CallTarget>
+    <CallTarget Targets="demo"></CallTarget>
+    <RemoveDir Directories="$(ReleaseDir)"></RemoveDir>
+  </Target>
+  <!--Build the library package-->
+  <Target Name="lib">
+    <MakeDir Directories="$(LibDir)"></MakeDir>
+    <MSBuild Projects="$(SourceDir)\lib\lib.vbproj" Properties="OutputPath=..\..\lib"></MSBuild>
+    <Copy SourceFiles="..\Flee\Miscellaneous\Ciloci.Flee.chm" DestinationFolder="$(LibDir)"></Copy>
+    <!--Zip up the files-->
+    <Exec Command="7za a -r $(ReleaseName)-lib.zip $(LibDir)\*.*"></Exec>
+    <Exec Command="7za a $(ReleaseName)-lib.zip $(ReleaseDir)\*.*"></Exec>
+  </Target>
+  <!--Builds the demo package-->
+  <Target Name="demo">
+    <MakeDir Directories="$(DemoDir)"></MakeDir>
+    <MSBuild Projects="$(SourceDir)\Demo\Demo.vbproj" Properties="OutputPath=..\..\demo"></MSBuild>
+    <Exec Command="del $(DemoDir)\*.xml"></Exec>
+    <!--Zip up the files-->
+    <Exec Command="7za a -r $(ReleaseName)-demo.zip $(DemoDir)\*.*"></Exec>
+    <Exec Command="7za a $(ReleaseName)-demo.zip $(ReleaseDir)\*.*"></Exec>
+  </Target>
+  <!--Builds the source package-->
+  <Target Name="src">
+    <!--Zip up the files-->
+    <Exec Command="7za a -r $(ReleaseName)-src.zip $(SourceDir)\*.*"></Exec>
+    <Exec Command="7za a $(ReleaseName)-src.zip $(ReleaseDir)\*.*"></Exec>
+  </Target>
+  <!--Fetch the source from TFS-->
+  <Target Name="FetchSource">
+    <MakeDir Directories="$(SourceDir)"></MakeDir>
+    <Exec Command="&quot;C:\Program Files\Microsoft Visual Studio 8\Common7\IDE\tf&quot; @..\..\build.tfc" WorkingDirectory="$(SourceDir)"></Exec>
+    <!--Remove read-only flag-->
+    <Exec Command="attrib -r $(SourceDir)\*.* /S"></Exec>
+    <!--Remove source control bindinds from projects and solution-->
+    <RemoveProjectSourceControlBindings Target="$(SourceDir)\lib\lib.vbproj" />
+    <RemoveProjectSourceControlBindings Target="$(SourceDir)\ConsoleTester\ConsoleTester.vbproj" />
+    <RemoveProjectSourceControlBindings Target="$(SourceDir)\Demo\Demo.vbproj" />
+    <RemoveProjectSourceControlBindings Target="$(SourceDir)\Tests\Tests.vbproj" />
+    <RemoveSolutionSourceControlBindings Target="$(SourceDir)\Flee.sln" />
+    <!--Delete source control files that we don't need-->
+    <Delete Files="$(SourceDir)\Flee.vssscc;$(SourceDir)\lib\lib.vbproj.vspscc;$(SourceDir)\demo\demo.vbproj.vspscc;$(SourceDir)\tests\tests.vbproj.vspscc;$(SourceDir)\ConsoleTester\ConsoleTester.vbproj.vspscc"></Delete>
+  </Target>
+  <!--Setup any info documents (ie: readme, release notes)-->
+  <Target Name="Documents">
+    <Copy SourceFiles="$(MiscDir)\readme.txt" DestinationFolder="$(ReleaseDir)"></Copy>
+    <Copy SourceFiles="$(SolutionItemsDir)\ReleaseNotes.txt" DestinationFolder="$(ReleaseDir)"></Copy>
+    <Copy SourceFiles="$(MiscDir)\license.txt" DestinationFolder="$(ReleaseDir)"></Copy>
+    <WriteTemplateText Version="$(Version)" Target="$(ReleaseReadmeFile)"></WriteTemplateText>
+    <WriteTemplateText Version="$(Version)" Target="$(ReleaseNotesFile)"></WriteTemplateText>    
+    </Target>
+</Project>
