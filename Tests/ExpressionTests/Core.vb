@@ -1,9 +1,9 @@
 Imports NUnit.Framework
-Imports ciloci.Flee
 Imports System.ComponentModel
 Imports System.Globalization
 Imports System.Reflection
 Imports System.IO
+Imports System.Threading
 Imports System.Xml.XPath
 
 Public MustInherit Class ExpressionTests
@@ -22,6 +22,10 @@ Public MustInherit Class ExpressionTests
 
 #Region "Initialization"
 	Public Sub New()
+
+		' Set the correct culture, otherwise tests will fail
+		Thread.CurrentThread.CurrentCulture = TestCulture
+
 		MyValidExpressionsOwner = New ExpressionOwner()
 
 		MyGenericContext = Me.CreateGenericContext(MyValidExpressionsOwner)
