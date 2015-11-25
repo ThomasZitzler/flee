@@ -2,17 +2,17 @@
 ' modify it under the terms of the GNU Lesser General Public License
 ' as published by the Free Software Foundation; either version 2.1
 ' of the License, or (at your option) any later version.
-' 
+'
 ' This library is distributed in the hope that it will be useful,
 ' but WITHOUT ANY WARRANTY; without even the implied warranty of
 ' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ' Lesser General Public License for more details.
-' 
+'
 ' You should have received a copy of the GNU Lesser General Public
 ' License along with this library; if not, write to the Free
 ' Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 ' MA 02111-1307, USA.
-' 
+'
 ' Flee - Fast Lightweight Expression Evaluator
 ' Copyright © 2007 Eugene Ciloci
 '
@@ -58,7 +58,7 @@ Friend Class FunctionCallElement
 		End If
 
 		If methods.Count > 0 Then
-			' More than one method exists with this name			
+			' More than one method exists with this name
 			Me.BindToMethod(methods, MyPrevious, argTypes)
 			Return
 		End If
@@ -107,7 +107,7 @@ Friend Class FunctionCallElement
 		customInfos.Clear()
 
 		For Each cmi As CustomMethodInfo In arr
-			If cmi.IsMatch(argTypes) = True Then
+			If cmi.IsMatch(argTypes, MyPrevious, MyContext) = True Then
 				customInfos.Add(cmi)
 			End If
 		Next
@@ -281,7 +281,11 @@ Friend Class FunctionCallElement
 
 		' Emit either a regular or paramArray call
 		If MyTargetMethodInfo.IsParamArray = False Then
-			Me.EmitRegularFunctionInternal(parameters, elements, ilg, services)
+			if MyTargetMethodInfo.IsExtensionMethod = False Then
+				Me.EmitRegularFunctionInternal(parameters, elements, ilg, services)
+			Else
+				Me.EmitExtensionFunctionInternal(parameters, elements, ilg, services)
+			End if
 		Else
 			Me.EmitParamArrayArguments(parameters, elements, ilg, services)
 		End If
@@ -303,9 +307,26 @@ Friend Class FunctionCallElement
 		Next
 	End Sub
 
+	Private Sub EmitExtensionFunctionInternal(ByVal parameters As ParameterInfo(), ByVal elements As ExpressionElement(), ByVal ilg As FleeILGenerator, ByVal services As IServiceProvider)
+		Debug.Assert(parameters.Length = elements.Length + 1, "argument count mismatch")
+
+		if MyPrevious Is Nothing Then
+			me.EmitLoadOwner(ilg)
+		End If
+
+		' Emit each element and any required conversions to the actual parameter type
+		For i As Integer = 1 To parameters.Length - 1
+			Dim element As ExpressionElement = elements(i)
+			Dim pi As ParameterInfo = parameters(i)
+			element.Emit(ilg, services)
+			Dim success As Boolean = ImplicitConverter.EmitImplicitConvert(element.ResultType, pi.ParameterType, ilg)
+			Debug.Assert(success, "conversion failed")
+		Next
+	End Sub
+
 	''' <summary>
 	''' The method info we will be calling
-	''' </summary>	
+	''' </summary>
 	Private ReadOnly Property Method() As MethodInfo
 		Get
 			Return MyTargetMethodInfo.Target
@@ -337,6 +358,12 @@ Friend Class FunctionCallElement
 	Public Overrides ReadOnly Property IsStatic() As Boolean
 		Get
 			Return Me.Method.IsStatic
+		End Get
+	End Property
+
+	Public Overrides ReadOnly Property IsExtensionMethod() As Boolean
+		Get
+			return Me.MyTargetMethodInfo.IsExtensionMethod
 		End Get
 	End Property
 End Class

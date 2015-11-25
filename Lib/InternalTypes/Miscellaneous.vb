@@ -2,23 +2,22 @@
 ' modify it under the terms of the GNU Lesser General Public License
 ' as published by the Free Software Foundation; either version 2.1
 ' of the License, or (at your option) any later version.
-' 
+'
 ' This library is distributed in the hope that it will be useful,
 ' but WITHOUT ANY WARRANTY; without even the implied warranty of
 ' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ' Lesser General Public License for more details.
-' 
+'
 ' You should have received a copy of the GNU Lesser General Public
 ' License along with this library; if not, write to the Free
 ' Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 ' MA 02111-1307, USA.
-' 
+'
 ' Flee - Fast Lightweight Expression Evaluator
 ' Copyright © 2007 Eugene Ciloci
 '
 
 Imports System.Reflection
-Imports System.Reflection.Emit
 
 Friend Enum BinaryArithmeticOperation
 	Add
@@ -162,8 +161,12 @@ Friend Class CustomMethodInfo
 
 		If params.Length = 0 Then
 			MyScore = 0.0
+		ElseIf params.Length = 1 And argTypes.Length = 0 ' extension method without parameter support -> prefer members
+			MyScore = 0.1
 		ElseIf IsParamArray = True Then
 			MyScore = Me.ComputeScoreForParamArray(params, argTypes)
+		ElseIf IsExtensionMethod = True Then
+			MyScore = Me.ComputeScoreExtensionMethodInternal(params, argTypes)
 		Else
 			MyScore = Me.ComputeScoreInternal(params, argTypes)
 		End If
@@ -176,6 +179,19 @@ Friend Class CustomMethodInfo
 
 		Return sum / argTypes.Length
 	End Function
+
+	' Compute a score showing how close our method matches the given argument types (for extension methods)
+	Private Function ComputeScoreExtensionMethodInternal(ByVal parameters As ParameterInfo(), ByVal argTypes As Type()) As Single
+		Debug.Assert(parameters.Length = argTypes.Length + 1)
+
+		Dim sum As Integer = 0
+		For i As Integer = 0 To argTypes.Length - 1
+			sum += ImplicitConverter.GetImplicitConvertScore(argTypes(i), parameters(i + 1).ParameterType)
+		Next
+
+		Return sum / argTypes.Length
+	End Function
+
 
 	Private Shared Function ComputeSum(ByVal parameters As ParameterInfo(), ByVal argTypes As Type()) As Integer
 		Debug.Assert(parameters.Length = argTypes.Length)
@@ -223,7 +239,8 @@ Friend Class CustomMethodInfo
 	End Function
 
 	' Is the given MethodInfo usable as an overload?
-	Public Function IsMatch(ByVal argTypes As Type()) As Boolean
+	' previous / context are needed in cae of extension methods
+	Public Function IsMatch(ByVal argTypes As Type(), previous As MemberElement, context As ExpressionContext) As Boolean
 		Dim parameters As ParameterInfo() = MyTarget.GetParameters()
 
 		' If there are no parameters and no arguments were passed, then we are a match.
@@ -240,6 +257,12 @@ Friend Class CustomMethodInfo
 		Dim lastParam As ParameterInfo = parameters(parameters.Length - 1)
 
 		If lastParam.IsDefined(GetType(ParamArrayAttribute), False) = False Then
+			' Extension method support
+			If parameters.Length = argTypes.Length + 1 Then
+				IsExtensionMethod = true
+				Return AreValidExtensionMethodArgumentsForParameters(argTypes, parameters, previous, context)
+			End if
+
 			If (parameters.Length <> argTypes.Length) Then
 				' Not a paramArray and parameter and argument counts don't match
 				Return False
@@ -257,10 +280,12 @@ Friend Class CustomMethodInfo
 		ElseIf Me.IsParamArrayMatch(argTypes, parameters, lastParam) = True Then
 			IsParamArray = True
 			Return True
-		Else
-			Return False
 		End If
+		Return False
 	End Function
+
+	Public Property IsExtensionMethod As Boolean
+
 
 	Private Function IsParamArrayMatch(ByVal argTypes As Type(), ByVal parameters As ParameterInfo(), ByVal paramArrayParameter As ParameterInfo) As Boolean
 		' Get the count of arguments before the paramArray parameter
@@ -303,6 +328,31 @@ Friend Class CustomMethodInfo
 		' Match if every given argument is implicitly convertible to the method's corresponding parameter
 		For i As Integer = 0 To argTypes.Length - 1
 			If ImplicitConverter.EmitImplicitConvert(argTypes(i), parameters(i).ParameterType, Nothing) = False Then
+				Return False
+			End If
+		Next
+
+		Return True
+	End Function
+
+	Private Shared Function AreValidExtensionMethodArgumentsForParameters(ByVal argTypes As Type(), ByVal parameters As ParameterInfo(), previous As MemberElement, context As ExpressionContext) As Boolean
+		Debug.Assert(argTypes.Length + 1 = parameters.Length)
+
+		If previous IsNot Nothing
+			if ImplicitConverter.EmitImplicitConvert(previous.ResultType, parameters(0).ParameterType, Nothing) = False
+				Return False
+			End If
+		ElseIf context.ExpressionOwner IsNot Nothing
+			if ImplicitConverter.EmitImplicitConvert(context.ExpressionOwner.GetType(), parameters(0).ParameterType, Nothing) = False
+				Return False
+			End If
+		Else
+			Return False
+		End If
+
+		' Match if every given argument is implicitly convertible to the method's corresponding parameter
+		For i As Integer = 0 To argTypes.Length - 1
+			If ImplicitConverter.EmitImplicitConvert(argTypes(i), parameters(i + 1).ParameterType, Nothing) = False Then
 				Return False
 			End If
 		Next

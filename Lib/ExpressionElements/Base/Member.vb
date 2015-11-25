@@ -2,23 +2,22 @@
 ' modify it under the terms of the GNU Lesser General Public License
 ' as published by the Free Software Foundation; either version 2.1
 ' of the License, or (at your option) any later version.
-' 
+'
 ' This library is distributed in the hope that it will be useful,
 ' but WITHOUT ANY WARRANTY; without even the implied warranty of
 ' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ' Lesser General Public License for more details.
-' 
+'
 ' You should have received a copy of the GNU Lesser General Public
 ' License along with this library; if not, write to the Free
 ' Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 ' MA 02111-1307, USA.
-' 
+'
 ' Flee - Fast Lightweight Expression Evaluator
 ' Copyright © 2007 Eugene Ciloci
 '
 Imports System.Reflection
 Imports System.Reflection.Emit
-Imports System.ComponentModel
 
 ' Base class for all member elements
 Friend MustInherit Class MemberElement
@@ -58,6 +57,13 @@ Friend MustInherit Class MemberElement
 
 	Protected MustOverride Sub ResolveInternal()
 	Public MustOverride ReadOnly Property IsStatic() As Boolean
+
+	Public ReadOnly Overridable Property IsExtensionMethod() As Boolean
+		Get
+			Return False
+		End Get
+	End Property
+
 	Protected MustOverride ReadOnly Property IsPublic() As Boolean
 
 	Protected Overridable Sub Validate()
@@ -65,7 +71,7 @@ Friend MustInherit Class MemberElement
 			Return
 		End If
 
-		If Me.IsStatic = True AndAlso Me.SupportsStatic = False Then
+		If Me.IsStatic = True AndAlso Me.SupportsStatic = False AndAlso IsExtensionMethod = False Then
 			MyBase.ThrowCompileException(CompileErrorResourceKeys.StaticMemberCannotBeAccessedWithInstanceReference, CompileExceptionReason.TypeMismatch, MyName)
 		ElseIf Me.IsStatic = False AndAlso Me.SupportsInstance = False Then
 			MyBase.ThrowCompileException(CompileErrorResourceKeys.ReferenceToNonSharedMemberRequiresObjectReference, CompileExceptionReason.TypeMismatch, MyName)
@@ -237,7 +243,13 @@ Friend MustInherit Class MemberElement
 			End If
 		Else
 			' We are not the first element; find all members with our name on the type of the previous member
-			Return MyPrevious.TargetType.FindMembers(targets, BindFlags, MyOptions.MemberFilter, MyName)
+			Dim foundMembers as MemberInfo() = MyPrevious.TargetType.FindMembers(targets, BindFlags, MyOptions.MemberFilter, MyName)
+
+			If foundMembers.Length = 0 Then
+				Return MyContext.Imports.RootImport.FindMembers(MyName, targets)
+			End If
+
+			Return foundMembers
 		End If
 	End Function
 
