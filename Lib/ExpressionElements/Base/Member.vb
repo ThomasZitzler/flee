@@ -244,12 +244,17 @@ Friend MustInherit Class MemberElement
 		Else
 			' We are not the first element; find all members with our name on the type of the previous member
 			Dim foundMembers as MemberInfo() = MyPrevious.TargetType.FindMembers(targets, BindFlags, MyOptions.MemberFilter, MyName)
+			Dim importedMembers as MemberInfo() = MyContext.Imports.RootImport.FindMembers(MyName, targets)
 
 			If foundMembers.Length = 0 Then
-				Return MyContext.Imports.RootImport.FindMembers(MyName, targets)
+				Return importedMembers
 			End If
 
-			Return foundMembers
+			Dim allMembers(foundMembers.Length + importedMembers.Length - 1) As MemberInfo
+			foundMembers.CopyTo(allMembers, 0)
+			importedMembers.CopyTo(allMembers, foundMembers.Length)
+
+			Return allMembers
 		End If
 	End Function
 
@@ -261,13 +266,20 @@ Friend MustInherit Class MemberElement
 		' Keep only the accessible members
 		members = Me.GetAccessibleMembers(members)
 
-		' If we have some matches, return them
-		If members.Length > 0 Then
-			Return members
+		' Also search imports
+		Dim importedMembers As MemberInfo() = MyContext.Imports.RootImport.FindMembers(name, memberType)
+
+		' if no members, just return imports
+		if Members.Length = 0 Then
+			Return importedMembers
 		End If
 
-		' No matches on owner, so search imports
-		Return MyContext.Imports.RootImport.FindMembers(name, memberType)
+		' combine members and imports
+		Dim allMembers(members.Length + importedMembers.Length - 1) As MemberInfo
+		members.CopyTo(allMembers, 0)
+		importedMembers.CopyTo(allMembers, members.Length)
+
+		Return allMembers
 	End Function
 
 	Protected Shared Function IsElementPublic(ByVal e As MemberElement) As Boolean

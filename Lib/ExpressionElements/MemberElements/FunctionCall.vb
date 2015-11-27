@@ -316,7 +316,7 @@ Friend Class FunctionCallElement
 
 		' Emit each element and any required conversions to the actual parameter type
 		For i As Integer = 1 To parameters.Length - 1
-			Dim element As ExpressionElement = elements(i)
+			Dim element As ExpressionElement = elements(i - 1)
 			Dim pi As ParameterInfo = parameters(i)
 			element.Emit(ilg, services)
 			Dim success As Boolean = ImplicitConverter.EmitImplicitConvert(element.ResultType, pi.ParameterType, ilg)
