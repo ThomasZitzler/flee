@@ -123,10 +123,17 @@ Friend Class FunctionCallElement
 
 	' Find the best match from a set of overloaded methods
 	Private Sub ResolveOverloads(ByVal infos As CustomMethodInfo(), ByVal previous As MemberElement, ByVal argTypes As Type())
-		' Compute a score for each candidate
-		For Each cmi As CustomMethodInfo In infos
-			cmi.ComputeScore(argTypes)
-		Next
+        Dim ownerType As Type = Nothing
+        If previous IsNot Nothing Then
+            ownerType = previous.ResultType
+        ElseIf MyContext.ExpressionOwner IsNot Nothing Then
+            ownerType = MyContext.ExpressionOwner.GetType()
+        End If
+
+        ' Compute a score for each candidate
+        For Each cmi As CustomMethodInfo In infos
+            cmi.ComputeScore(argTypes, ownerType)
+        Next
 
 		' Sort array from best to worst matches
 		Array.Sort(Of CustomMethodInfo)(infos)

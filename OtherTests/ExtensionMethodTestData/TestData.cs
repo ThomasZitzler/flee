@@ -6,10 +6,26 @@
     {
         public string Id { get; set; }
 
-        public TestData Sub
+        public SubTestData Sub
         {
-            get { return new TestData { Id = "Sub" + this.Id }; }
+            get { return new SubTestData { Id = "Sub" + this.Id }; }
         }
+
+        public string SayHello(int times)
+        {
+            string result = string.Empty;
+            for (int i = 0; i < times; i++)
+            {
+                result += "hello ";
+            }
+
+            return result + Id;
+        }
+    }
+
+    internal class SubTestData
+    {
+        public string Id { get; set; }
 
         public string SayHello(int times)
         {

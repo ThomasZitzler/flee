@@ -156,24 +156,29 @@ Friend Class CustomMethodInfo
 		MyTarget = target
 	End Sub
 
-	Public Sub ComputeScore(ByVal argTypes As Type())
-		Dim params As ParameterInfo() = MyTarget.GetParameters()
+    Public Sub ComputeScore(ByVal argTypes As Type(), ByVal ownerType As Type)
+        Dim params As ParameterInfo() = MyTarget.GetParameters()
 
-		If params.Length = 0 Then
-			MyScore = 0.0
-		ElseIf params.Length = 1 And argTypes.Length = 0 ' extension method without parameter support -> prefer members
-			MyScore = 0.1
-		ElseIf IsParamArray = True Then
-			MyScore = Me.ComputeScoreForParamArray(params, argTypes)
-		ElseIf IsExtensionMethod = True Then
-			MyScore = Me.ComputeScoreExtensionMethodInternal(params, argTypes)
-		Else
-			MyScore = Me.ComputeScoreInternal(params, argTypes)
-		End If
-	End Sub
+        If params.Length = 0 Then
+            MyScore = 0.0
+        ElseIf params.Length = 1 And argTypes.Length = 0 Then ' extension method without parameter support -> prefer members
+            If ownerType IsNot Nothing Then
+                Dim contextArgTypes As Type() = {ownerType}
+                MyScore = 0.1 + Me.ComputeScoreInternal(params, contextArgTypes)
+            Else
+                MyScore = 0.1
+            End If
+        ElseIf IsParamArray = True Then
+            MyScore = Me.ComputeScoreForParamArray(params, argTypes)
+        ElseIf IsExtensionMethod = True Then
+            MyScore = Me.ComputeScoreExtensionMethodInternal(params, argTypes)
+        Else
+            MyScore = Me.ComputeScoreInternal(params, argTypes)
+        End If
+    End Sub
 
-	' Compute a score showing how close our method matches the given argument types
-	Private Function ComputeScoreInternal(ByVal parameters As ParameterInfo(), ByVal argTypes As Type()) As Single
+    ' Compute a score showing how close our method matches the given argument types
+    Private Function ComputeScoreInternal(ByVal parameters As ParameterInfo(), ByVal argTypes As Type()) As Single
 		' Our score is the average of the scores of each parameter.  The lower the score, the better the match.
 		Dim sum As Integer = ComputeSum(parameters, argTypes)
 

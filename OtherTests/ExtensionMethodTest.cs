@@ -10,6 +10,13 @@
     public class ExtensionMethodTest : ExpressionTests
     {
         [TestMethod]
+        public void TestExtensionMethodAsMethodCallOnOwner()
+        {
+            var result = GetExpressionContext().CompileDynamic("SayHello(Sub)").Evaluate();
+            Assert.AreEqual("Hello as well, SubWorld", result);
+        }
+
+        [TestMethod]
         public void TestExtensionMethodCallOnOwner()
         {
             var result = GetExpressionContext().CompileDynamic("SayHello()").Evaluate();
@@ -20,7 +27,7 @@
         public void TestExtensionMethodCallOnProperty()
         {
             var result = GetExpressionContext().CompileDynamic("Sub.SayHello()").Evaluate();
-            Assert.AreEqual("Hello SubWorld", result);
+            Assert.AreEqual("Hello as well, SubWorld", result);
         }
 
         [TestMethod]
@@ -48,7 +55,7 @@
         public void TestExtensionMethodCallOnPropertyWithArguments()
         {
             var result = GetExpressionContext().CompileDynamic("Sub.SayHello(\"!!!\")").Evaluate();
-            Assert.AreEqual("Hello SubWorld!!!", result);
+            Assert.AreEqual("Hello as well, SubWorld!!!", result);
         }
 
         [TestMethod]
@@ -62,7 +69,7 @@
         public void TestExtensionMethodCallOnPropertyWithArgumentsOnOverload()
         {
             var result = GetExpressionContext().CompileDynamic("Sub.SayHello(\"!!!\")").Evaluate();
-            Assert.AreEqual("Hello SubWorld!!!", result);
+            Assert.AreEqual("Hello as well, SubWorld!!!", result);
         }
 
         private static ExpressionContext GetExpressionContext()
